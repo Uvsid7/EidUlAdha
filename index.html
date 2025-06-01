@@ -32,7 +32,7 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
+            justify-content: flex-start; /* Align to top to see content with ads */
             min-height: 100vh;
             padding: 20px;
             text-align: center;
@@ -50,12 +50,27 @@
             max-width: 500px;
             width: 100%;
             animation: fadeInPage 0.8s ease-out forwards;
+            margin-bottom: 20px; /* Space for banner ad */
         }
 
         @keyframes fadeInPage {
             from { opacity: 0; transform: translateY(30px) scale(0.95); }
             to { opacity: 1; transform: translateY(0) scale(1); }
         }
+
+        #senderGreetingDisplay {
+            margin-bottom: 15px;
+            font-size: 1.2em;
+            color: var(--accent-color);
+            text-shadow: 0 0 5px var(--glow-color-1), 0 0 10px var(--glow-color-2);
+            font-weight: 600;
+            animation: fadeInGreeting 1s ease-out 0.2s forwards;
+            opacity: 0;
+        }
+        #senderGreetingDisplay strong {
+            color: #FFFACD; /* Lighter gold for the name */
+        }
+
 
         .eid-gif {
             max-width: 100%;
@@ -126,7 +141,7 @@
             font-weight: 600;
             cursor: pointer;
             transition: transform 0.2s ease-out, box-shadow 0.2s ease-out;
-            outline: 2px solid transparent; /* For focus, but main outline is from gradient */
+            outline: 2px solid transparent;
             box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3);
         }
         
@@ -164,7 +179,7 @@
         }
         
         #customMessageContainer {
-            margin-top: 10px; /* Space above the message if it appears after generate button */
+            margin-top: 10px;
             animation: fadeInMessage 0.5s ease-out;
         }
 
@@ -208,11 +223,28 @@
             transform: scale(1.05);
         }
 
+        .banner-ad-container {
+            width: 100%;
+            max-width: 728px; /* Ad's specified width */
+            min-height: 90px; /* Ad's height, ensure space is reserved */
+            margin: 0 auto 20px auto; /* Centered, with space below */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            /* background: rgba(0,0,0,0.1); /* For debugging placement */
+        }
+        .banner-ad-container iframe { /* Target potential iframe from ad script */
+            max-width: 100% !important;
+            display: block !important; /* Remove extra space and help with responsiveness */
+        }
+
+
         /* Responsive adjustments */
         @media (max-width: 600px) {
             .container {
-                padding: 20px;
-                margin: 10px;
+                padding: 20px 15px;
+                margin-left: 10px;
+                margin-right: 10px;
             }
             .greeting-text {
                 font-size: 1.4em;
@@ -223,12 +255,26 @@
              .custom-eid-message {
                 font-size: 1em;
             }
+            #senderGreetingDisplay {
+                font-size: 1.1em;
+            }
+        }
+         @media (max-width: 380px) {
+            .greeting-text {
+                font-size: 1.2em;
+            }
+            #senderGreetingDisplay {
+                font-size: 1em;
+            }
         }
     </style>
 </head>
 <body>
 
     <div class="container">
+        <div id="senderGreetingDisplay" style="display: none;">
+            <!-- Content will be injected by JS -->
+        </div>
         <img src="eid.gif" alt="Eid Festivities" class="eid-gif">
 
         <h1 class="greeting-text">✨ Eid Mubarak! May this Eid bring joy, peace, and prosperity to all! ✨</h1>
@@ -253,8 +299,24 @@
         </div>
     </div>
 
+    <div class="banner-ad-container">
+        <script type="text/javascript">
+            atOptions = {
+                'key' : '6638d05fb8a6dd788b1e1349055433a7',
+                'format' : 'iframe',
+                'height' : 90,
+                'width' : 728,
+                'params' : {}
+            };
+        </script>
+        <script type="text/javascript" src="//brevitychestprocess.com/6638d05fb8a6dd788b1e1349055433a7/invoke.js"></script>
+    </div>
+
+    <script type='text/javascript' src='//brevitychestprocess.com/21/c5/16/21c5162b07501baf9159340568c36558.js'></script>
+
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            const senderGreetingDisplay = document.getElementById('senderGreetingDisplay');
             const userNameInput = document.getElementById('userName');
             const generateButton = document.getElementById('generateButton');
             const customMessageContainer = document.getElementById('customMessageContainer');
@@ -266,25 +328,31 @@
 
             let generatedMessageText = ""; // To store the message for sharing
 
+            // --- Check for 'from' URL parameter ---
+            const urlParams = new URLSearchParams(window.location.search);
+            const fromName = urlParams.get('from');
+
+            if (fromName) {
+                senderGreetingDisplay.innerHTML = `✨ You've received a special greeting from <strong>${decodeURIComponent(fromName)}</strong>! ✨`;
+                senderGreetingDisplay.style.display = 'block';
+                userNameInput.placeholder = "Now, enter your name to send wishes!";
+            }
+
+
             // --- Audio Controls ---
-            // Browsers often block autoplay with sound. We'll start muted.
-            audio.muted = true;
+            audio.muted = true; // Start muted for better autoplay compatibility
             muteButton.textContent = 'Unmute Music';
 
-            // Try to play the audio (muted).
             audio.play().catch(error => {
-                console.warn("Autoplay (muted) was prevented or interrupted. User interaction needed to play sound.", error);
-                // UI already reflects muted state. User will click "Unmute Music".
-                // Some browsers might not even allow `play()` before interaction.
-                // In this case, the first click on "Unmute Music" will try to play.
+                console.warn("Autoplay (muted) was prevented. User interaction needed to play sound.", error);
+                // UI reflects muted state. User can click "Unmute Music".
             });
 
             muteButton.addEventListener('click', () => {
                 if (audio.muted) {
                     audio.muted = false;
                     muteButton.textContent = 'Mute Music';
-                    // If audio is paused (e.g., couldn't autoplay even muted), play it now.
-                    if (audio.paused) {
+                    if (audio.paused) { // If it couldn't even start muted
                         audio.play().catch(e => console.error("Error playing audio after unmute:", e));
                     }
                 } else {
@@ -296,22 +364,32 @@
             // --- Greeting Generation ---
             generateButton.addEventListener('click', () => {
                 const name = userNameInput.value.trim();
-                const displayName = name ? name : "Your Friend";
+                const displayName = name ? name : "A Friend"; // Default if no name entered
 
                 generatedMessageText = `Eid Mubarak from ${displayName}! 🎉 Wishing you happiness and blessings!`;
                 customMessageElement.textContent = generatedMessageText;
                 customMessageContainer.style.display = 'block';
+                // Scroll to the message if it's long or page is short
+                customMessageContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             });
 
             // --- WhatsApp Sharing ---
             whatsappShareButton.addEventListener('click', () => {
                 if (!generatedMessageText) {
-                    alert("Please generate a wish first!");
-                    return;
+                    // If user clicks share without generating, generate with current input or default
+                    const name = userNameInput.value.trim();
+                    const displayName = name ? name : "A Friend";
+                    generatedMessageText = `Eid Mubarak from ${displayName}! 🎉 Wishing you happiness and blessings!`;
+                }
+                
+                // Use the name from the input field for the 'from' parameter in the new link
+                const sharerName = userNameInput.value.trim();
+                let siteUrlToShare = window.location.origin + window.location.pathname;
+                if (sharerName) {
+                    siteUrlToShare += `?from=${encodeURIComponent(sharerName)}`;
                 }
 
-                const siteUrl = window.location.href;
-                const whatsappMessage = `${generatedMessageText}\n\nCheck out this Eid Greeting: ${siteUrl}`;
+                const whatsappMessage = `${generatedMessageText}\n\nCheck out this Eid Greeting: ${siteUrlToShare}`;
                 const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(whatsappMessage)}`;
                 
                 window.open(whatsappUrl, '_blank');
@@ -320,4 +398,4 @@
     </script>
 
 </body>
-</html>
+    </html>
